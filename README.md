@@ -35,10 +35,10 @@ peter@brix:~/src_crystal$ icr
 WARNING: ICR is not a full featured REPL........  
  
 The pefered way to connect is:
-rlwrap socat localhost:9090   #rlwrap gives command history
-or:
-socat tcp:localhost:9090      #no issues with ctrl chars from client side
-or:
-telnet localhost 9090         #be carful, if you use ctrl chars on client side !!!
+rlwrap socat localhost:9090   #rlwrap gives command history  
+or:  
+socat tcp:localhost:9090      #no issues with ctrl chars from client side  
+or:  
+telnet localhost 9090         #be carful, if you use ctrl chars on client side !!!  
 
 Use at your own risk, currently no password protected login
