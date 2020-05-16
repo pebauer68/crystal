@@ -9,15 +9,15 @@ All input from connected clients is sent to the server process and to all
 other connected clients. So you can chat on the bash or even better on
 the ICR prompt with other users. Coloured output from ICR seems to work.
 
-$ icr
-127.0.0.1:56334 Client sent: 
-icr(0.34.0) > 
-puts "hello"
-127.0.0.1:56334 Client sent: puts "hello"
-puts "hello"
-icr(0.34.0) > puts "hello"
-hello
- => nil
+$ icr  
+127.0.0.1:56334 Client sent:   
+icr(0.34.0) >   
+puts "hello"  
+127.0.0.1:56334 Client sent: puts "hello"  
+puts "hello"  
+icr(0.34.0) > puts "hello"  
+hello  
+ => nil  
  
 The IP address and input of any client is visible to all connected clients. 
 
