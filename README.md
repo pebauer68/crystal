@@ -21,17 +21,17 @@ hello
  
 The IP address and input of any client is visible to all connected clients. 
 
-socat - tcp:localhost:9090
-Hello in the bash chat: 127.0.0.1:56334 
-Please be careful, all input is logged
-If you enter: "exit" the bash server will shutdown !!!
-127.0.0.1:56334 Logged in
-Clients online: 1
-icr
-127.0.0.1:56334 Client sent: icr
-icr
-peter@brix:~/src_crystal$ icr
-WARNING: ICR is not a full featured REPL........
+socat - tcp:localhost:9090  
+Hello in the bash chat: 127.0.0.1:56334   
+Please be careful, all input is logged  
+If you enter: "exit" the bash server will shutdown !!!  
+127.0.0.1:56334 Logged in  
+Clients online: 1  
+icr  
+127.0.0.1:56334 Client sent: icr  
+icr  
+peter@brix:~/src_crystal$ icr  
+WARNING: ICR is not a full featured REPL........  
  
 The pefered way to connect is:
 rlwrap socat localhost:9090   #rlwrap gives command history
