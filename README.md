@@ -6,8 +6,9 @@ server prcoess like an interactive bash session or any other program which
 runs on the command line and do not expect a real tty (e.g. top).
 
 All input from connected clients is sent to the server process and to all
-other connected clients. So you can chat on the bash or even better on
-the ICR prompt with other users. Coloured output from ICR seems to work.
+other connected clients. The output from the server process is sent to all clients.
+So you can chat on the bash or even better on the ICR prompt with other users.
+Coloured output from ICR seems to work.
 
 $ icr  
 127.0.0.1:56334 Client sent:   
