@@ -6,7 +6,7 @@ class MyGlobals
 end
 my=MyGlobals.new
 
-class Mc    #My Clients Singleton
+class Mc    #My Clients Class
     @@ac = Array(TCPSocket).new  #array for client connections
     def self.add_client(str)
         @@ac << str
