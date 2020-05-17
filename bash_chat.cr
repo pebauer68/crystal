@@ -6,27 +6,29 @@ class MyGlobals
 end
 my=MyGlobals.new
 
-class Mc    #My Clients Class
-    @@ac = Array(TCPSocket).new  #array for client connections
-    def self.add_client(str)
-        @@ac << str
-        print_state
-    end
-    def self.del_client(str)
-        @@ac.delete str
-        print_state
-    end
-    def self.get_clients
-        @@ac
-    end    
-    def self.count
-        @@ac.size
-    end    
-    def self.print_state
-     p! @@ac
-     puts "Number of Clients Online: #{count}"
-   end
- end   
+
+module Mc  #Myclients is a Singleton
+  extend self
+  AC = Array(TCPSocket).new  #Constant array for client connections
+  def add_client(str)
+      AC << str
+      clients_print_state
+  end
+  def del_client(str)
+      AC.delete str
+      clients_print_state
+  end
+  def get_clients
+      AC
+  end    
+  def clients_count : Int32
+      AC.size
+  end    
+  def clients_print_state
+      puts AC
+      puts "Number of Clients Online: #{clients_count}"
+  end
+end   
 
 #Long running Process, here an interactive shell for example
 spawn do
@@ -66,6 +68,8 @@ spawn do
   end
 end  
 
+#this def runs spwaned in a seperate fiber for every client session
+#all needed objects must be passed in
 def handle_client(client,channel,fd)
     Mc.add_client(client)
     client.send "Hello in the bash chat: #{client.remote_address} \n"
@@ -73,7 +77,7 @@ def handle_client(client,channel,fd)
     client.send "If you enter: \"exit\" the bash server will shutdown !!!\n"
     Mc.get_clients.each do |all|     #send echo to all clients
          all.puts (client.remote_address.to_s + " Logged in")
-         all.puts ("Clients online: #{Mc.count}")
+         all.puts ("Clients online: #{Mc.clients_count}")
        end
     while message = client.gets
       channel.send (client.remote_address.to_s + " Client sent: " + message)
@@ -87,7 +91,7 @@ def handle_client(client,channel,fd)
     Mc.del_client(client) 
     Mc.get_clients.each do |all|
       all.puts (client.remote_address.to_s + " Disconnected")
-      all.puts ("Clients online: #{Mc.count}")
+      all.puts ("Clients online: #{Mc.clients_count}")
     end   
 end
 
@@ -100,10 +104,9 @@ while my.bashpid == 0
     sleep 0.1
   end
 channel = Channel(String).new
-Mc.print_state
+Mc.clients_print_state
 
 #logging to stdout in main fiber
 loop do
   puts Time.local.to_s + " IP:" + channel.receive
 end
-
