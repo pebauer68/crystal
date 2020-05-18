@@ -5,7 +5,6 @@ module Mc  #Myclients is a Singleton
   class_property bashpid : Int32 = 0
   class_property bashinputfd : IO = STDIN
   extend self
-  bashpid = 0
   AC = Array(TCPSocket).new  #Constant array for client connections, can be changed, because mutable
   def bashpid(pid); bashpid=pid ; end
   def add_client(str)
