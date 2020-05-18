@@ -34,7 +34,7 @@ icr
 peter@brix:~/src_crystal$ icr  
 WARNING: ICR is not a full featured REPL........  
  
-The pefered way to connect is:  
+##The pefered way to connect is: <h2> 
 rlwrap socat - tcp localhost:9090   #rlwrap gives command history on client side   
 or:  
 socat - tcp:localhost:9090      #no issues with ctrl chars from client side    
