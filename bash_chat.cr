@@ -1,15 +1,13 @@
 require "socket"
 channel = Channel(String).new
-class MyGlobals  
-    property bashpid = 0  
-    property bashinputfd = IO::FileDescriptor.new(0, blocking: (LibC.isatty(0)) == 0)
-end
-my=MyGlobals.new
-
 
 module Mc  #Myclients is a Singleton
+  class_property bashpid : Int32 = 0
+  class_property bashinputfd : IO = STDIN
   extend self
-  AC = Array(TCPSocket).new  #Constant array for client connections
+  bashpid = 0
+  AC = Array(TCPSocket).new  #Constant array for client connections, can be changed, because mutable
+  def bashpid(pid); bashpid=pid ; end
   def add_client(str)
       AC << str
       clients_print_state
@@ -36,8 +34,8 @@ spawn do
     cmd = "bash -i"
     Process.run(cmd, shell: true) do | p |
          pp p
-         my.bashpid = p.pid
-         my.bashinputfd = p.input.dup              #get copy of current fd
+         Mc.bashpid = p.pid
+         Mc.bashinputfd = p.input.dup              #get copy of current fd
          p.input.puts("exec 2>&1")                 #stderr > stdout
          p.input.puts("echo connected to bash")    #send to STDIN of bash
           while line = p.output.read_line 
@@ -64,7 +62,7 @@ spawn do
   while client = server.accept?
     p! client
     p! client.remote_address
-    spawn handle_client(client,channel,my.bashinputfd)
+    spawn handle_client(client,channel,Mc.bashinputfd)
   end
 end  
 
@@ -99,7 +97,7 @@ PORT=9090
 puts "Welcome, server with PID #{Process.pid},listening on TCP port #{PORT}"
 puts "STDIN not connected to local terminal"
 puts "Waiting for remote clients"
-while my.bashpid == 0
+while Mc.bashpid == 0
     puts "Wait for Bash start"
     sleep 0.1
   end
@@ -110,3 +108,5 @@ Mc.clients_print_state
 loop do
   puts Time.local.to_s + " IP:" + channel.receive
 end
+
+
