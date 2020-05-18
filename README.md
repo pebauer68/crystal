@@ -1,7 +1,7 @@
 # crystal
 Small programs written in Crystal language
 
-The bash_chat.cr program allows multiple users to connect to a single
+**bash_chat.cr** The program allows multiple users to connect to a single
 server process like an interactive bash session or any other program which
 runs on the command line and do not expect a real tty (e.g. top).
 
