@@ -1,4 +1,5 @@
 #connect to Gambas GUI via TCP
+#https://www.bitkistl.com/2020/05/the-crybas-demo-app.html
 require "socket"
 GUI_SERVER="localhost"
 GUI_PORT=9090
