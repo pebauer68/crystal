@@ -17,13 +17,11 @@ class GuiClient
 def send (object,value)
     puts "send(object,value)"     
     @client << object + "," + value + "\n"  #send to GUI_SERVER
-    sleep 0.1    
 end
 
 def send (object)
   puts "send(object)"     
   @client << object + "\n"  #send to GUI_SERVER
-  sleep 0.1
 end
 
 def disconnect
