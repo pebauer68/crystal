@@ -1,6 +1,8 @@
 # crystal
 Small programs written in Crystal language
 
+**crybas.cr**  A GUI client which shows how to connect to a Gamabs GUI server, and how to use the GUI elements
+
 **bash_chat.cr** The program allows multiple users to connect to a single
 server process like an interactive bash session or any other program which
 runs on the command line and do not expect a real tty (e.g. top).
@@ -39,6 +41,6 @@ rlwrap socat - tcp localhost:9090   #rlwrap gives command history on client side
 or:  
 socat - tcp:localhost:9090      #no issues with ctrl chars from client side    
 or:  
-telnet localhost 9090         #be carful, if you use ctrl chars on client side !!!  
+telnet localhost 9090         #be careful, if you use ctrl chars on client side !!!  
 
 Use at your own risk, currently no password protected login
