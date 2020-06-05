@@ -3,8 +3,7 @@ Small programs written in Crystal language
 
 **crybas.cr**  A GUI client which shows how to connect to a Gambas GUI server, and how to use the GUI elements
 
-![]
-(https://1.bp.blogspot.com/-1LzXBQm0sKw/Xto0kJh32NI/AAAAAAAAmCk/ipPAADE5F5olDWw2x9qHMcvIc6eLxPDPgCLcBGAsYHQ/s1600/crybas1.0.gif)
+![] (https://1.bp.blogspot.com/-1LzXBQm0sKw/Xto0kJh32NI/AAAAAAAAmCk/ipPAADE5F5olDWw2x9qHMcvIc6eLxPDPgCLcBGAsYHQ/s1600/crybas1.0.gif)
 
 **bash_chat.cr** The program allows multiple users to connect to a single
 server process like an interactive bash session or any other program which
