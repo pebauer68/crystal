@@ -96,7 +96,12 @@ loop do   #Error writing to socket: Broken pipe when server closes
     if mygui.send_time
           mygui.send "Textbox1.Text",Time.local.to_s  # display time in the gui
           sleep 1
+    else
+      sleep 1  
     end
 end
+
+sleep
+
 
 sleep
