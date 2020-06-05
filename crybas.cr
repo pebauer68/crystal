@@ -9,7 +9,7 @@ class GuiClient
   def connect
     @client = TCPSocket.new(GUI_SERVER,GUI_PORT)
   rescue err
-    #puts err.message  
+    puts err.message  
     exit
   end
 
