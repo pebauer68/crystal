@@ -102,6 +102,3 @@ loop do   #Error writing to socket: Broken pipe when server closes
 end
 
 sleep
-
-
-sleep
