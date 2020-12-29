@@ -10,6 +10,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"print", ->(x : String, y : Int32) { puts x; return 0 }},
   {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},
   {"eval", ->(x : String, y : Int32) { eval x; return 0 }},
+  {"ceval", ->(x : String, y : Int32) { ceval x; return 0 }},
   {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},
   {"+", ->(x : String, y : Int32) { plus(x, y) }},
   {"inc", ->(x : String, y : Int32) { inc(x, y) }},
@@ -90,10 +91,11 @@ helptext = <<-HELP
 List Vars, functions: 
 >ls
 
-Set vars:
+Set,clear vars:
 >counter = 5 
 >name = foo
 >counter+ = 2
+>clear          #clear all user vars
 
 Print Strings, vars:
 >p <varname> 
@@ -115,12 +117,22 @@ Run a script from cli:
 
 Execute shell commands:
 >! pwd     #be aware of the blank 
+>! icr     #use icr(interactive crystal), exit with ^D
+           #https://github.com/crystal-community/icr
 
 Toggle debug on/off:
 >debug
 
 Execute functions like they were typed in:
 >eval help
+
+Eval via the crystal binary:
+Expression is compiled and then executed.
+This will take about a second per evaluation. 
+>ceval puts 1+2
+>ceval puts "aha"
+The result is stored as a string in the user var:
+ceval.result
 
 HELP
 
@@ -160,6 +172,34 @@ def eval(line)
     else
       puts "Command #{word} not found"
     end
+  end
+end
+
+#eval a line by  
+#passing the line to the crystal binary 
+def ceval(line)
+  #print "eval: ",line,"\n" if VARS["debug"]
+  if line && line != ""
+    cmd  = "crystal"
+    args = ["eval", line]
+    status, output = run_cmd(cmd, args)
+    puts output  
+    # ser user var
+    Code.vars_string = Code.vars_string.merge({"ceval.result" => output.chomp})  
+    else
+      puts "Line is empty"
+   end
+end
+
+#run cmd as a subprocess and capture the output
+def run_cmd(cmd, args)
+  stdout = IO::Memory.new
+  stderr = IO::Memory.new
+  status = Process.run(cmd, args: args, output: stdout, error: stderr)
+  if status.success?
+    {status.exit_code, stdout.to_s}
+  else
+    {status.exit_code, stderr.to_s}
   end
 end
 
