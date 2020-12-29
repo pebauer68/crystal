@@ -14,6 +14,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},
   {"+", ->(x : String, y : Int32) { plus(x, y) }},
   {"inc", ->(x : String, y : Int32) { inc(x, y) }},
+  {"dec", ->(x : String, y : Int32) { dec(x, y) }},
   {"<", ->(x : String, y : Int32) { lower(x, y) }},
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
@@ -27,6 +28,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"help", ->(x : String, y : Int32) { help(x); return 0 }},
   {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return 0 }},
   {"test", ->(x : String, y : Int32) { procloop; return 0 }},
+  {"sleep",->(x : String, y : Int32) { sleep(x.to_i); return 0 }},
   {"pass", ->(x : String, y : Int32) { pass; return 0 }},
   {"end", ->(x : String, y : Int32) { Code._end_; return 0 }},
   {"cls", ->(x : String, y : Int32) { print "\33c\e[3J"; return 0 }},
@@ -159,11 +161,12 @@ end
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval(line)
-  #print "eval: ",line,"\n" if VARS["debug"]
+  print "eval: ",line,"\n" if VARS["debug"]
   word = ""
   if line && line != ""
     ary = [] of String
     ary = split(line)
+    return if ary.size == 0  # check needed for lines with blanks
     if ary.includes?("+") # found operator in command ?
       ary.unshift("+")
     else
@@ -175,8 +178,8 @@ def eval(line)
     return if word.starts_with?("#") # skip comments
     rol = ary.join(" ")              # rest of line
 
-    # print "Word: ",word,"\n" if VARS["debug"]
-    # print "Rol: ",rol,"\n" if VARS["debug"]
+    print "Word: ",word,"\n" if VARS["debug"]
+    print "Rol: ",rol,"\n" if VARS["debug"]
 
     if Code.kwh.try &.has_key?(word)
       Code.kwh.not_nil![word].call(rol, ary.size)
@@ -288,11 +291,10 @@ module Code
     @@start_line = "no"
 
     size = @@codelines.size
-    loop do 
-      line = @@codelines[@@current_line]
-      #print "Current line:",@@current_line+1,"\n" if VARS["debug"]
+    while line = @@codelines[@@current_line] 
+      print "Current line:",@@current_line+1,"\n" if VARS["debug"]
       if !@@skip_lines
-        #print "Eval line: ", @@line, "\n" if VARS["debug"]
+        print "Eval line: ", line," ",line.size, "\n" if VARS["debug"]
         eval(line)
       else
         # print "find end of block\n"
@@ -301,7 +303,7 @@ module Code
       if @@jmp_trigger != "no"
         @@current_line = @@jmp_trigger.to_i
         @@jmp_trigger = "no" # reset trigger
-        # print "Jumping to: ",@@current_line," ",@@line,"\n"
+        print "Jumping to: ",@@current_line," ",@@codelines[@@current_line],"\n" if VARS["debug"]
       else
         @@current_line += 1
       end
@@ -343,32 +345,39 @@ module Code
   #implement while
   def _while_(x : String, y : Int32)
     # while a < 77
+    p! x,y if VARS["debug"]
+    @@start_line = @@current_line.to_s
+
     if y == 3
-      varname = S.shift(x, start = true)
-      cmp = S.shift(x)
-      value = S.shift(x).to_i
-      @@start_line = @@current_line.to_s
+      varname, cmp , value = x.split(" ")
       
-      if cmp == "<" #check operator
+       if cmp == "<" #check operator
         result = lower("#{varname} #{cmp} #{value}", 3)
-      else
+       else
         result = 0
-      end  
+       end 
+     end  
+     # while true
+     if y == 1
+        cmp = x.split(" ")[0]
+        if cmp == "true" #check operator
+          result = 1
+        else 
+          result = 0
+        end
+      end
 
       if result == 0 # loop conditions not met
+        print "set skip lines: true","\n" if VARS["debug"]    
         @@skip_lines = true
         return
       end
-    else
-      puts "Method while needs at least 3 arguments"
-      puts "got: ", x
-    end
   end
 
   #implement end
   def _end_
     @@jmp_trigger = @@start_line
-    # print "jmp trigger: ",@@start_line.to_s,"\n" if VARS["debug"]
+    print "set jmp trigger: ",@@start_line.to_s,"\n" if VARS["debug"]
   end
 end   
 #end of Code module
@@ -500,10 +509,6 @@ def lower(x : String, y : Int32)
   # counter < 10
   varname, operand, val = x.split(" ")
   value = val.to_i
-  # y=3
-  # varname = S.shift(x,start=true)
-  # operand = S.shift(x)
-  # value = S.shift(x).to_i
   if Code.vars_int32[varname] < value
     return 1
   else
@@ -536,6 +541,18 @@ def inc(x : String, y : Int32)
   if y == 1
     varname = x.split(" ")[0]
     Code.vars_int32[varname] += 1
+  else
+    puts "Method inc needs 1 argument"
+    puts "got: ", x
+  end
+  return 0
+end
+
+# decrement var value 
+def dec(x : String, y : Int32)
+  if y == 1
+    varname = x.split(" ")[0]
+    Code.vars_int32[varname] -= 1
   else
     puts "Method inc needs 1 argument"
     puts "got: ", x
