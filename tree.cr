@@ -18,14 +18,13 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"split", ->(x : String, y : Int32) { split x; return 0 }},
-  {"ls", ->(x : String, y : Int32) { ls x; return 0 }},
+  {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
   {"let", ->(x : String, y : Int32) { let x; return 0 }},
   {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
   {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
   {"!", ->(x : String, y : Int32) { system(x); return 0 }},
   {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},
   {"help", ->(x : String, y : Int32) { help(x); return 0 }},
-  {"ls", ->(x : String, y : Int32) { ls; return 0 }},
   {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return 0 }},
   {"test", ->(x : String, y : Int32) { procloop; return 0 }},
   {"pass", ->(x : String, y : Int32) { pass; return 0 }},
@@ -69,15 +68,25 @@ def prompt
   print ">"
 end
 
-#list VARS and functions
-def ls(*arg)
-  print "builtin vars: "
-  puts VARS # builtin constants can change their value
-  print "user vars: \n"
-  print "vars_int32: ",Code.vars_int32,"\n" if Code.vars_int32.size > 0
-  print "vars_string: ",Code.vars_string,"\n" if Code.vars_string.size > 0
-  puts "functions:"
-  Code.kwh.each { |d| puts d }
+#list VARS and/or functions
+def ls ( x : String, y : Int32)
+  p! x,y if VARS["debug"]
+  if y > 1 
+     puts "Method ls needs 0 or 1 argument"
+     puts "got: ", x
+     return
+  end   
+  if ((y == 1 && x == "vars") || (y == 0))
+    print "builtin vars: "
+    puts VARS # builtin constants can change their value
+    print "user vars: \n"
+    print "vars_int32: ",Code.vars_int32,"\n" if Code.vars_int32.size > 0
+    print "vars_string: ",Code.vars_string,"\n" if Code.vars_string.size > 0  
+  end
+  if ((y == 1 && x == "functions") || (y == 0))
+    puts "functions:"
+    Code.kwh.each { |d| puts d }
+  end  
 end
 
 #read line from STDIN
@@ -88,8 +97,10 @@ end
 
 def help(*arg)  
 helptext = <<-HELP
-List Vars, functions: 
->ls
+List vars, functions: 
+>ls # list all
+>ls vars
+>ls functions
 
 Set,clear vars:
 >counter = 5 
@@ -337,8 +348,13 @@ module Code
       cmp = S.shift(x)
       value = S.shift(x).to_i
       @@start_line = @@current_line.to_s
+      
+      if cmp == "<" #check operator
+        result = lower("#{varname} #{cmp} #{value}", 3)
+      else
+        result = 0
+      end  
 
-      result = lower("#{varname} #{cmp} #{value}", 3)
       if result == 0 # loop conditions not met
         @@skip_lines = true
         return
@@ -451,7 +467,7 @@ def let(x : String)
   # <myintvar> = 7
   # <mystringvar> = "7"
   varname = x.split(" ")[0]
-  value = (x.split(" ")[2]) 
+  value = (x.split(" ")[2..].join(" ")) # rest of line
   if value.to_i?
     Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
   else if
