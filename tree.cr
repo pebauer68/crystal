@@ -27,6 +27,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"test", ->(x : String, y : Int32) { procloop; return 0 }},
   {"pass", ->(x : String, y : Int32) { pass; return 0 }},
   {"end", ->(x : String, y : Int32) { Code._end_; return 0 }},
+  {"cls", ->(x : String, y : Int32) { print "\33c\e[3J"; return 0 }},
   {"exit", ->(x : String, y : Int32) { exit(0) }},
 ]
 
