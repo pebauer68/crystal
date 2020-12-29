@@ -12,12 +12,14 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"eval", ->(x : String, y : Int32) { eval x; return 0 }},
   {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},
   {"+", ->(x : String, y : Int32) { plus(x, y) }},
+  {"inc", ->(x : String, y : Int32) { inc(x, y) }},
   {"<", ->(x : String, y : Int32) { lower(x, y) }},
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"split", ->(x : String, y : Int32) { split x; return 0 }},
   {"ls", ->(x : String, y : Int32) { ls x; return 0 }},
   {"let", ->(x : String, y : Int32) { let x; return 0 }},
+  {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
   {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
   {"!", ->(x : String, y : Int32) { system(x); return 0 }},
   {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},
@@ -106,8 +108,10 @@ Call functions:
 
 Load,run,list a script:
 >load <filename>
->run
+>run  
 >list
+Run a script from cli:
+./tree <filename>
 
 Execute shell commands:
 >! pwd     #be aware of the blank 
@@ -132,7 +136,7 @@ end
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval(line)
-  print "eval: ",line,"\n" if VARS["debug"]
+  #print "eval: ",line,"\n" if VARS["debug"]
   word = ""
   if line && line != ""
     ary = [] of String
@@ -151,13 +155,9 @@ def eval(line)
     # print "Word: ",word,"\n" if VARS["debug"]
     # print "Rol: ",rol,"\n" if VARS["debug"]
 
-    notfound = true
     if Code.kwh.try &.has_key?(word)
-      notfound = false
       Code.kwh.not_nil![word].call(rol, ary.size)
-    end
-
-    if notfound
+    else
       puts "Command #{word} not found"
     end
   end
@@ -197,7 +197,7 @@ module Code
   class_property kwh = Hash(String, Proc(String, Int32, Int32)).new
   class_property codelines = [] of String
   class_property lines = 0
-  class_property line = ""
+  #class_property line = ""
   class_property current_line = 0
   class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
@@ -236,14 +236,16 @@ module Code
     @@jmp_trigger = "no"
     @@start_line = "no"
 
-    while @@line = @@codelines[@@current_line]
-      print "Current line:",@@current_line+1,"\n" if VARS["debug"]
+    size = @@codelines.size
+    loop do 
+      line = @@codelines[@@current_line]
+      #print "Current line:",@@current_line+1,"\n" if VARS["debug"]
       if !@@skip_lines
-        print "Eval line: ", @@line, "\n" if VARS["debug"]
-        eval(@@line)
+        #print "Eval line: ", @@line, "\n" if VARS["debug"]
+        eval(line)
       else
         # print "find end of block\n"
-        @@skip_lines = false if @@line.includes?("end")
+        @@skip_lines = false if line.includes?("end")
       end
       if @@jmp_trigger != "no"
         @@current_line = @@jmp_trigger.to_i
@@ -252,10 +254,10 @@ module Code
       else
         @@current_line += 1
       end
-      break if @@current_line >= @@codelines.size
-    end
+      break if @@current_line >= codelines.size
+    end # of loop
     puts "reached end of file"
-  end
+  end # of run code
 
   #list the code
   def list
@@ -419,6 +421,12 @@ def let(x : String)
   # p! Code.vars_int32
 end
 
+#clear all vars in the hashes
+def clear(x : String)
+    Code.vars_int32.clear
+    Code.vars_string.clear
+end
+
 #print var value to stdout
 def _p_(x : String)
   if Code.vars_int32.has_key?(x)
@@ -462,6 +470,18 @@ def plus(x : String, y : Int32)
     Code.vars_int32[varname] += value
   else
     puts "Method plus needs at least 4 arguments"
+    puts "got: ", x
+  end
+  return 0
+end
+
+# increment var value 
+def inc(x : String, y : Int32)
+  if y == 1
+    varname = x.split(" ")[0]
+    Code.vars_int32[varname] += 1
+  else
+    puts "Method inc needs 1 argument"
     puts "got: ", x
   end
   return 0
