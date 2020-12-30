@@ -13,12 +13,12 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"ceval", ->(x : String, y : Int32) { ceval x; return 0 }},
   {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},
   {"+", ->(x : String, y : Int32) { plus(x, y) }},
+  {"-", ->(x : String, y : Int32) { minus(x, y) }},
   {"inc", ->(x : String, y : Int32) { inc(x, y) }},
   {"dec", ->(x : String, y : Int32) { dec(x, y) }},
   {"<", ->(x : String, y : Int32) { lower(x, y) }},
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
-  {"split", ->(x : String, y : Int32) { split x; return 0 }},
   {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
   {"let", ->(x : String, y : Int32) { let x; return 0 }},
   {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
@@ -40,8 +40,10 @@ Code.register
 if ARGV.size == 1 # run file non interactive
   file = ARGV[0]
   eval("load #{file}")
-  eval("run")
+  eval2("run")
+  exit
 end
+
 repl()
 
 #run interactive if no file given or file not found
@@ -128,9 +130,9 @@ Load,run,list a script:
 Run a script from cli:
 ./tree <filename>
 
-Execute shell commands:
->! pwd     #be aware of the blank 
->! icr     #use icr(interactive crystal), exit with ^D
+Execute shell commands by ! prefix:
+>!pwd      
+>!icr     #use icr(interactive crystal), exit with ^D
            #https://github.com/crystal-community/icr
 
 Toggle debug on/off:
@@ -142,7 +144,7 @@ Execute functions like they were typed in:
 Eval via the crystal binary:
 Expression is compiled and then executed.
 This will take about a second per evaluation. 
->ceval puts 1+2
+>ceval 1+2
 >ceval puts "aha"
 The result is stored as a string in the user var:
 ceval.result
@@ -165,14 +167,69 @@ def eval(line)
   word = ""
   if line && line != ""
     ary = [] of String
-    ary = split(line)
+    ary = full_split(line)   # needs full split which is a bit slower
     return if ary.size == 0  # check needed for lines with blanks
+    unshifted = false
     if ary.includes?("+") # found operator in command ?
       ary.unshift("+")
-    else
-      if ary.includes?("=") # found operator in command ?
+      unshifted = true
+    end
+    if ary.includes?("-") # found operator in command ?
+      ary.unshift("-")
+      unshifted = true
+    end
+    if !unshifted && ary.includes?("=") # found operator in command ?
         ary.unshift("let")
-      end
+    end
+    word = ary.shift                 # get first word
+    return if word.starts_with?("#") # skip comments
+    rol = ary.join(" ")              # rest of line
+
+    print "Word: ",word,"\n" if VARS["debug"]
+    print "Rol: ",rol,"\n" if VARS["debug"]
+
+    if Code.kwh.try &.has_key?(word)
+      Code.kwh.not_nil![word].call(rol, ary.size) #lookup functions
+    else 
+      res = lookup_vars(word)
+      print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
+    end
+  end
+end
+
+def lookup_vars(word)
+ ret = false
+ if Code.vars_int32.has_key?(word)
+  puts Code.vars_int32[word]
+  ret = true
+ end
+ if Code.vars_string.has_key?(word)
+  puts Code.vars_string[word]
+  ret = true 
+ end
+ return ret
+end
+
+#eval a line by
+#search for operators and 
+#looking up the commands in the keyword hash
+def eval2(line)
+  print "eval: ",line,"\n" if VARS["debug"]
+  word = ""
+  if line && line != ""
+    ary = [] of String
+    ary = line.split(" ") # here simple split is used
+    unshifted = false
+    if ary.includes?("+") # found operator in command ?
+      ary.unshift("+")
+      unshifted = true
+    end
+    if ary.includes?("-") # found operator in command ?
+      ary.unshift("-")
+      unshifted = true
+    end
+    if !unshifted && ary.includes?("=") # found operator in command ?
+        ary.unshift("let")
     end
     word = ary.shift                 # get first word
     return if word.starts_with?("#") # skip comments
@@ -189,11 +246,13 @@ def eval(line)
   end
 end
 
+
 #eval a line by  
 #passing the line to the crystal binary 
 def ceval(line)
   #print "eval: ",line,"\n" if VARS["debug"]
   if line && line != ""
+    line = "puts " + line
     cmd  = "crystal"
     args = ["eval", line]
     status, output = run_cmd(cmd, args)
@@ -219,24 +278,24 @@ end
 
 #split line into words by blank
 #seperate operators from var names
-def split(line)
+def full_split(line)
   puts "Line in: ", line if VARS["debug"]
   ary = [] of String
+  # execute shell command
+  if line.starts_with?("!")
+   return ["!",line.lchop]  
+  end  
+
+  if line.starts_with?("ceval ")
+    return ["ceval",line.lchop("ceval ")]
+  end
+
+  #pre - split operators
+  line = line.gsub("="," = ")    
+  line = line.gsub("+"," + ")
+  line = line.gsub("-"," - ") 
   line.split(" ", remove_empty: true) { |string|
-    if string.ends_with?("+") && string.size > 1 # find operator like "+"
-      string = string.chomp("+")                 # seperate operator from string
-      ary << string
-      string = "+"
-    end
-
-    if string.ends_with?("+=")    # find operator like "+="
-      string = string.chomp("+=") # seperate operator from string
-      ary << string
-      ary << "+"
-      string = "="
-    end
-
-    ary << string
+    ary << string                 # "a+=1" ->  ["a", "+", "=", "1"]
   }
   puts "Line splitted: ", ary if VARS["debug"]
   return ary
@@ -277,6 +336,7 @@ module Code
       VARS["filename"] = filename
       VARS["lines"] = lines
       print "Loaded: ", filename, " Number of lines: ", lines, "\n"
+      split_run
     else
       puts "File #{filename} not found"
     end
@@ -295,7 +355,7 @@ module Code
       print "Current line:",@@current_line+1,"\n" if VARS["debug"]
       if !@@skip_lines
         print "Eval line: ", line," ",line.size, "\n" if VARS["debug"]
-        eval(line)
+        eval2(line)
       else
         # print "find end of block\n"
         @@skip_lines = false if line.includes?("end")
@@ -319,10 +379,39 @@ module Code
     }
   end
   
+  def split_run()
+    return if VARS["filename"] == ""
+    @@current_line = 0
+    size = @@codelines.size
+    while line = @@codelines[@@current_line] 
+      print "Current line:",@@current_line+1,"\n" if VARS["debug"]
+      print "Split line: ", line," ",line.size, "\n" if VARS["debug"]
+      ary = [] of String
+      if (!(line.starts_with?("#") || full_split(line).size == 0 ))  # skip comment lines and empty lines
+        #split by blank
+        ary = full_split(line) 
+        @@codelines[@@current_line] = ary.join(" ")  # write line back to codelines 
+      else
+        @@codelines.delete_at(@@current_line) # remove line from code
+      end  
+      @@current_line += 1
+      break if @@current_line >= codelines.size
+    end # of loop
+    puts "code cleanup done in split_run()"
+  end # of split code
+
+  #list the code
+  def list
+    @@codelines.each { |line|
+      puts line
+    }
+  end
+
   #merge the keyword hash 
   def kws
     kws = {
       "run"  => ->(x : String, y : Int32) { run x; return 0 },
+      "split_run"  => ->(x : String, y : Int32) { split_run; return 0 },
       "list" => ->(x : String, y : Int32) { list; return 0 },
     }
     index = 0
@@ -479,8 +568,11 @@ def let(x : String)
   value = (x.split(" ")[2..].join(" ")) # rest of line
   if value.to_i?
     Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
+    Code.vars_string.delete(varname)
   else if
+    value=value.gsub('"',"")  # remove ""
     Code.vars_string = Code.vars_string.merge({varname => value})
+    Code.vars_int32.delete(varname)
    end 
   end
   # p! Code.vars_int32
@@ -524,10 +616,6 @@ def plus(x : String, y : Int32)
   if y == 4
     varname = x.split(" ")[0]
     value = x.split(" ")[3].to_i
-    # varname = S.shift(x,start=true)
-    # operator = S.shift(x)
-    # assign = S.shift(x)
-    # value = S.shift(x)
     Code.vars_int32[varname] += value
   else
     puts "Method plus needs at least 4 arguments"
@@ -535,6 +623,23 @@ def plus(x : String, y : Int32)
   end
   return 0
 end
+
+# subtract value from a var
+# example:  counter-= 3
+# splitted: counter - = 3
+def minus(x : String, y : Int32)
+  p! x if VARS["debug"] 
+  if y == 4
+    varname = x.split(" ")[0]
+    value = x.split(" ")[3].to_i
+    Code.vars_int32[varname] -= value
+  else
+    puts "Method minus needs at least 4 arguments"
+    puts "got: ", x
+  end
+  return 0
+end
+
 
 # increment var value 
 def inc(x : String, y : Int32)
