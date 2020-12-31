@@ -1,5 +1,6 @@
 #require "readline"         #its better to use the rlwrap readline wrapper 
                             #from the shell: #rlwrap ./tree 
+require "./quoted.cr"
 VARS = {
   "started"  => true,       #used in prompt()
   "debug"    => false,      #toggle debug message output by entering debug
@@ -291,9 +292,9 @@ def full_split(line)
   end
 
   #pre - split operators
-  line = line.gsub("="," = ")    
-  line = line.gsub("+"," + ")
-  line = line.gsub("-"," - ") 
+  line = split_operator_from_var(line,"=")   
+  line = split_operator_from_var(line,"+")
+  line = split_operator_from_var(line,"-")
   line.split(" ", remove_empty: true) { |string|
     ary << string                 # "a+=1" ->  ["a", "+", "=", "1"]
   }
