@@ -18,8 +18,8 @@ class Gui
   property? isopen = false
   property r = IO::FileDescriptor.new(fd = 0)
   property w = IO::FileDescriptor.new(fd = 0)
+  NL = "\n"
 
-  # run cmd as a long running sub process in a fiber
   def initialize
     reader, writer = IO.pipe   # writer goes to process input
     reader2, writer2 = IO.pipe # reader2 delivers output
@@ -28,19 +28,19 @@ class Gui
     @w = writer
   end
 
-  def run_long_cmd(proc_stdin, proc_stdout)
-      @isopen = true
-      Process.run("wish", output: proc_stdout, input: proc_stdin)
-      puts "\rWish Process ended"
-      @isopen = false
+  def run_long_cmd(proc_stdin, proc_stdout) # run cmd in a fiber
+    @isopen = true
+    Process.run("wish", output: proc_stdout, input: proc_stdin)
+    puts "\rWish Process ended"
+    @isopen = false
   end
 
-  def close_window(gui)
-    close_window = %(wm forget .\n)
-    gui.w << close_window
+  def close_window
+    close_window = %(wm forget .)
+    @w << close_window << NL
   end
 
-  def set_window_properties(gui)
+  def set_window_properties
     properties = {
       "window"          => %(wm resizable . 0 0),
       "title"           => %(wm title . EnterName),
@@ -53,52 +53,48 @@ class Gui
       "bind_send_entry" => %(bind .e <Return> { puts $name }),
     }
     properties.each_value { |prop|
-      gui.w << prop << "\n"
+      @w << prop << NL
     }
   end
 
   def run_app(mygui, myname, debug = false) # run receive in a fiber
-      counter = 0
-      while receive = r.gets
-        if receive && receive.size > 0 # got some chars
-          puts "receive counter: #{counter}" if debug
-          l = receive.size
-          puts "got: #{l} chars" if debug
-          puts receive if l > 0 && debug # write received data from bash to stdout
-          if receive.includes?(" ")
-            vals = receive.split
-            myname.firstname, myname.lastname = vals if vals.size == 2
-          else
-            myname.firstname = receive
-            myname.lastname = ""
-          end
-          myname.hasdata = true
+    counter = 0
+    while receive = r.gets
+      if receive && receive.size > 0 # got some chars
+        puts "receive counter: #{counter}" if debug
+        l = receive.size
+        puts "got: #{l} chars" if debug
+        puts receive if l > 0 && debug # write received data from bash to stdout
+        if receive.includes?(" ")
+          vals = receive.split
+          myname.firstname, myname.lastname = vals if vals.size == 2
+        else
+          myname.firstname = receive
+          myname.lastname = ""
         end
-        sleep 0.1
-        counter += 1
-      end # end of while
+        myname.hasdata = true
+      end
+      sleep 0.1
+      counter += 1
+    end # end of while
   end
 end
 
 class Main
-  def self.run
-    mygui = Gui.new
-    myname = Name.new
-    mygui.set_window_properties(mygui)
-    spawn mygui.run_app(mygui, myname)
-    sleep 0.5
+  mygui = Gui.new
+  myname = Name.new
+  mygui.set_window_properties
+  spawn mygui.run_app(mygui, myname)
+  sleep 0.5
 
-    while mygui.isopen?        # run while window is open
-      break if myname.hasdata? # wait for input data from tcl widget
-      sleep 1
-    end
+  while mygui.isopen?        # run while window is open
+    break if myname.hasdata? # wait for input data from tcl widget
+    sleep 1
+  end
 
-    puts "GUI closed" unless mygui.isopen?
-    mygui.close_window(mygui)
-    if myname.hasdata?
-      puts "Name entered is: #{myname.firstname} #{myname.lastname} "
-    end
+  puts "GUI closed" unless mygui.isopen?
+  mygui.close_window
+  if myname.hasdata?
+    puts "Name entered is: #{myname.firstname} #{myname.lastname} "
   end
 end
-
-Main.run
