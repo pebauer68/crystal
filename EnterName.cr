@@ -64,7 +64,7 @@ class Gui
         puts "receive counter: #{counter}" if debug
         l = receive.size
         puts "got: #{l} chars" if debug
-        puts receive if l > 0 && debug # write received data from bash to stdout
+        puts receive if l > 0 && debug # write received data from wish to stdout
         if receive.includes?(" ")
           vals = receive.split
           myname.firstname, myname.lastname = vals if vals.size == 2
