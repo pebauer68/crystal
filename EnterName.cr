@@ -8,9 +8,7 @@ class Name
   property firstname
   property lastname
 
-  def initialize(firstname = "", lastname = "")
-    @firstname = firstname
-    @lastname = lastname
+  def initialize(@firstname = "", @lastname = "")
   end
 end
 
